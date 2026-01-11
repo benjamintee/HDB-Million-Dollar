@@ -7,6 +7,7 @@ from shinywidgets import output_widget, render_widget
 from shiny import App, ui
 from shiny import render, reactive
 from pathlib import Path
+from htmltools import HTML
 
 # Load data
 this_dir = Path(__file__).parent
@@ -20,13 +21,18 @@ df["date"] = pd.to_datetime(
     df["Month"].astype(str).str.zfill(2) + "-01"
 )
 
+# Rename flat types to combine executive and multi-generation flats 
 df["Flat_Type"] = df["Flat_Type"].replace(
             {"EXECUTIVE": "EXECUTIVE/MG", "MULTI-GENERATION": "EXECUTIVE/MG"}
         )
-
 df["PSF"] = df["Resale_Price"] / (df["Floor_Area_Sqm"] * 10.764)
 
+# Define unique list of HDB towns
 hdbtowns = df["Town"].unique()
+
+# Set the Last Updated tracker for the page
+latest_date_dt = df["date"].max()
+up_date = latest_date_dt.strftime("%b %Y")
 
 # UI
 app_ui = ui.page_navbar(  
@@ -136,9 +142,22 @@ app_ui = ui.page_navbar(
                     ui.nav_panel("Max Price", ui.output_data_frame("table_max_price")),
                     ui.nav_panel("Max PSF", ui.output_data_frame("table_max_psf")),
                     ui.nav_panel("Median Price", ui.output_data_frame("table_median_price")),
-                    ui.nav_panel("Median PSF", ui.output_data_frame("table_median_psf"),),
+                    ui.nav_panel("Median PSF", ui.output_data_frame("table_median_psf")),
                     id="tab",  
                     title= "Table 7: Transactions by HDB Town" + "\u00A0\u00A0",  
+                ),
+                col_widths=[12]
+        ),
+        ui.layout_columns(
+                ui.navset_card_tab(
+                    ui.nav_panel("Volume", ui.output_data_frame("project_volume")),   
+                    ui.nav_panel("Share", ui.output_data_frame("project_share")),
+                    ui.nav_panel("Max Price", ui.output_data_frame("project_max_price")),
+                    ui.nav_panel("Max PSF", ui.output_data_frame("project_max_psf")),
+                    ui.nav_panel("Median Price", ui.output_data_frame("project_median_price")),
+                    ui.nav_panel("Median PSF", ui.output_data_frame("project_median_psf")),
+                    id="tab2",  
+                    title= "Table 8: Transactions by HDB Projects" + "\u00A0\u00A0",  
                 ),
                 col_widths=[12]
         ),
@@ -146,9 +165,30 @@ app_ui = ui.page_navbar(
     ui.nav_panel("GEOGRAPHICAL DISTRIBUTION", "Page B content"),  
     ui.nav_panel("ANALYSIS", "Page C content"),  
     ui.nav_panel("TRANSACTIONS", "Page C content"),
+    ui.nav_spacer(),
+    ui.nav_control(
+        ui.div(
+            f"Last updated: {up_date}",
+            style="font-size: 13px; color: #666; padding-top: 12px; margin-right: 15px;"
+        )
+    ),
+    ui.nav_control(
+        ui.tags.a(
+            ui.tags.i(class_="fa-brands fa-github fa-lg"),
+            href="https://github.com/benjamintee/HDB-Million-Dollar.git",
+            target="_blank",
+            title="View source on GitHub",
+            style="color: inherit; text-decoration: none;"
+        )
+    ),
+    header=ui.tags.head(
+        HTML('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">')
+    ),
     title="MILLION DOLLAR FLATS IN SINGAPORE",  
     id="page",  
 )  
+
+
 
 # Helper function to filter data
 def filter_period(df, period, n=10):
@@ -803,8 +843,6 @@ def server(input, output, session):
         # 3. Use your existing helper to create Period/Period_sort
         period_choice = input.Period1()
         n_periods = {"Monthly": 10, "Quarterly": 8, "Yearly": 8}[period_choice]
-        
-        # This creates the Period_sort and Period columns
         df_filtered = filter_period(df_md, period_choice, n=n_periods)
         
         return df_filtered, period_choice
@@ -814,9 +852,9 @@ def server(input, output, session):
         df_filtered, period_choice = table_data_base()
         
         if df_filtered.empty:
-            return pd.DataFrame(), [], pd.DataFrame()
+            return pd.DataFrame(), [], pd.DataFrame(), input.Flattype1()
         
-        # Identify unique periods to show as columns (already limited by filter_period)
+        # Identify unique periods to show as columns 
         recent_periods = sorted(df_filtered["Period_sort"].unique())
         
         # Calculate Last 12 Months separately
@@ -832,18 +870,17 @@ def server(input, output, session):
             
         last_12m_df = df_md_all[df_md_all["date"] > twelve_months_ago]
         
-        return df_filtered, recent_periods, last_12m_df
+        return df_filtered, recent_periods, last_12m_df, ft_choice
 
     # ---- Chart 7: Filtering Data to Show Trends by Town ----
     # 7A: Volume Trends
     @render.data_frame
     def table_volume():
-        df_filtered, recent_periods, last_12m_df = prepared_table_df()
+        df_filtered, recent_periods, last_12m_df, ft_choice = prepared_table_df()
         
         if df_filtered.empty:
             return pd.DataFrame({"Result": ["No data for selection"]})
 
-        # Pivot: Index=Town, Columns=Display Period, Values=Count
         pivot = df_filtered.pivot_table(
             index="Town", 
             columns="Period", 
@@ -860,6 +897,7 @@ def server(input, output, session):
         
         # Combine
         result = pivot.join(l12m, how="left").fillna(0).astype(int)
+        result.insert(0, "Flat Type", ft_choice)
         
         # Sort by the value in the 'Last 12 Months'
         result = result.sort_values(by="Last 12 Months", ascending=False).reset_index()
@@ -889,7 +927,7 @@ def server(input, output, session):
     @render.data_frame
     def table_share():
         # 1. Get filtered Million-Dollar data and L12M slice from reactive calc
-        df_md_filtered, recent_periods, last_12m_md = prepared_table_df()
+        df_md_filtered, recent_periods, last_12m_md, ft_choice = prepared_table_df()
         
         if df_md_filtered.empty:
             return render.DataTable(pd.DataFrame({"Message": ["No data available"]}))
@@ -935,10 +973,11 @@ def server(input, output, session):
 
         # 8. Final Join and Row Sorting
         result = share_result.join(l12m_share, how="left").fillna(0).reset_index()
+        result.insert(1, "Flat Type", ft_choice)
         result = result.sort_values(by="Last 12 Months (%)", ascending=False)
 
         # 9. Formatting: Convert to string with 1 decimal place and % sign
-        cols_to_format = [c for c in result.columns if c != "Town"]
+        cols_to_format = [c for c in result.columns if c not in ["Town", "Flat Type"]]
         for col in cols_to_format:
             result[col] = result[col].map("{:.1f}%".format)
 
@@ -966,7 +1005,7 @@ def server(input, output, session):
     @render.data_frame
     def table_max_price():
         # 1. Get filtered Million-Dollar data from reactive calc
-        df_md_filtered, recent_periods, last_12m_md = prepared_table_df()
+        df_md_filtered, recent_periods, last_12m_md, ft_choice = prepared_table_df()
         
         if df_md_filtered.empty:
             return render.DataTable(pd.DataFrame({"Message": ["No data available"]}))
@@ -999,12 +1038,11 @@ def server(input, output, session):
 
         # 6. Final Join and Sort
         result = max_pivot.join([historical_max, l12m_max], how="left").fillna(0).reset_index()
-        
-        # Sort by Historical Max to see the "Prestige" towns at the top
+        result.insert(1, "Flat Type", ft_choice)
         result = result.sort_values(by= "ATH Max", ascending=False)
 
         # 7. Formatting: Convert to "$X.XXM" strings
-        cols_to_format = [c for c in result.columns if c != "Town"]
+        cols_to_format = [c for c in result.columns if c not in ["Town", "Flat Type"]]
         for col in cols_to_format:
             result[col] = result[col].apply(
                 lambda x: f"${x/1_000_000:.2f}M" if x > 0 else "-"
@@ -1024,7 +1062,7 @@ def server(input, output, session):
     @render.data_frame
     def table_max_psf():
         # 1. Get filtered Million-Dollar data from reactive calc
-        df_md_filtered, recent_periods, last_12m_md = prepared_table_df()
+        df_md_filtered, recent_periods, last_12m_md, ft_choice = prepared_table_df()
         
         if df_md_filtered.empty:
             return render.DataTable(pd.DataFrame({"Message": ["No data available"]}))
@@ -1059,12 +1097,11 @@ def server(input, output, session):
 
         # 6. Final Join and Sort
         result = psf_pivot.join([historical_psf, l12m_psf], how="left").fillna(0).reset_index()
-        
-        # Sort by L12M Max PSF to see current "hot" areas
+        result.insert(1, "Flat Type", ft_choice)
         result = result.sort_values(by="L12M Max PSF", ascending=False)
 
         # 7. Formatting: Convert to "$X,XXX" strings
-        cols_to_format = [c for c in result.columns if c != "Town"]
+        cols_to_format = [c for c in result.columns if c not in ["Town", "Flat Type"]]
         for col in cols_to_format:
             result[col] = result[col].apply(
                 lambda x: f"${x:,.0f}" if x > 0 else "-"
@@ -1083,7 +1120,7 @@ def server(input, output, session):
     # Table 7D/7E: Median Price and Median PSF 
     def render_median_table(column_name, is_price=True):
         # 1. Get filtered Million-Dollar data
-        df_md_filtered, recent_periods, last_12m_md = prepared_table_df()
+        df_md_filtered, recent_periods, last_12m_md, ft_choice = prepared_table_df()
         
         if df_md_filtered.empty:
             return render.DataTable(pd.DataFrame({"Message": ["No data available"]}))
@@ -1116,12 +1153,11 @@ def server(input, output, session):
         # 4. Join and Sort
         # The order will be: Town, [Months...], L12M MD Median, All Resale
         result = md_pivot.join([l12m_md_median, all_resale_median], how="left").fillna(0).reset_index()
-        
-        # Sort by the Million Dollar Median performance
+        result.insert(1, "Flat Type", ft_choice)
         result = result.sort_values(by="L12M MD Median", ascending=False)
 
         # 5. Formatting Logic
-        cols_to_format = [c for c in result.columns if c != "Town"]
+        cols_to_format = [c for c in result.columns if c not in ["Town", "Flat Type"]]
         for col in cols_to_format:
             if is_price:
                 result[col] = result[col].apply(lambda x: f"${x/1e6:.2f}M" if x > 0 else "-")
@@ -1147,6 +1183,166 @@ def server(input, output, session):
     @render.data_frame
     def table_median_psf():
         return render_median_table("PSF", is_price=False)
+
+    # ---- Table 8A: Project Volume ----
+    @render.data_frame
+    def project_volume():
+        df_filtered, recent_periods, last_12m_df, ft_choice = prepared_table_df()
+        if df_filtered.empty:
+            return pd.DataFrame({"Result": ["No data"]})
+
+        # Pivot by Project (BUILDING)
+        pivot = df_filtered.pivot_table(
+            index="BUILDING", columns="Period", values="Resale_Price", aggfunc="count"
+        ).fillna(0)
+
+        # Sort columns chronologically
+        pivot = pivot[df_filtered.sort_values("Period_sort")["Period"].unique()]
+        
+        # Metadata: Get the Town for each Project (first occurrence)
+        project_towns = df_filtered.groupby("BUILDING")["Town"].first()
+        
+        # Stats: L12M and Historical All
+        l12m = last_12m_df.groupby("BUILDING").size().rename("Last 12 Months")
+        
+        # "Historical All" based on selected Flat Type
+        df_md_all = df[df["Resale_Price"] >= 1_000_000]
+        if ft_choice != "All":
+            df_md_all = df_md_all[df_md_all["Flat_Type"] == ft_choice]
+        hist_all = df_md_all.groupby("BUILDING").size().rename("Historical All")
+        
+        # Combine
+        result = pivot.join([project_towns, l12m, hist_all], how="left").fillna(0)
+        
+        # Reset and Organize Columns
+        result = result.reset_index().rename(columns={"BUILDING": "Project Name"})
+        result.insert(1, "Town", result.pop("Town")) # Move Town to index 1
+        
+        # Sort and Format
+        result = result.sort_values(by="Last 12 Months", ascending=False)
+        
+        # Ensure counts are integers
+        count_cols = [c for c in result.columns if c not in ["Project Name", "Town"]]
+        result[count_cols] = result[count_cols].astype(int)
+
+        return render.DataTable(result, styles=[{"style": {"padding": "4px 8px", "font-size": "13px"}}, 
+            {"cols": [0], "style": {"font-weight": "bold"}}])
+
+    # ---- Table 8B: Project Share ----
+    @render.data_frame
+    def project_share():
+        df_md_filtered, recent_periods, last_12m_md, ft_choice = prepared_table_df()
+        if df_md_filtered.empty:
+            return pd.DataFrame({"Message": ["No data"]})
+
+        period_choice = input.Period1()
+        n_periods = {"Monthly": 10, "Quarterly": 8, "Yearly": 8}[period_choice]
+        df_all_market = filter_period(df, period_choice, n=n_periods)
+
+        md_pivot = df_md_filtered.pivot_table(index="BUILDING", columns="Period", values="Resale_Price", aggfunc="count").fillna(0)
+        total_pivot = df_all_market.pivot_table(index="BUILDING", columns="Period", values="Resale_Price", aggfunc="count").fillna(0)
+
+        share_result = (md_pivot / total_pivot.reindex_like(md_pivot) * 100).fillna(0)
+        chrono_cols = [c for c in df_all_market.sort_values("Period_sort")["Period"].unique() if c in share_result.columns]
+        share_result = share_result[chrono_cols]
+
+        # Metadata
+        project_towns = df_md_filtered.groupby("BUILDING")["Town"].first()
+        
+        # L12M Share
+        l12m_start = df["date"].max() - pd.DateOffset(months=12)
+        all_12m = df[df["date"] > l12m_start].groupby("BUILDING").size()
+        md_12m = last_12m_md.groupby("BUILDING").size()
+        l12m_share = (md_12m / all_12m * 100).fillna(0).rename("Last 12 Months (%)")
+
+        result = share_result.join([project_towns, l12m_share], how="left").fillna(0).reset_index().rename(columns={"BUILDING": "Project Name"})
+        result.insert(1, "Town", result.pop("Town"))
+        result = result.sort_values(by="Last 12 Months (%)", ascending=False)
+
+        cols_to_format = [c for c in result.columns if c not in ["Project Name", "Town"]]
+        for col in cols_to_format:
+            result[col] = result[col].map("{:.1f}%".format)
+
+        return render.DataTable(result, styles=[{"style": {"padding": "4px 8px", "font-size": "13px"}}, {"cols": [0], "style": {"font-weight": "bold"}}])
+
+    # ---- Table 8C: Project Max Price ----
+    @render.data_frame
+    def project_max_price():
+        df_md_filtered, recent_periods, last_12m_md, ft_choice = prepared_table_df()
+        if df_md_filtered.empty:
+            return pd.DataFrame({"Message": ["No data"]})
+
+        max_pivot = df_md_filtered.pivot_table(index="BUILDING", columns="Period", values="Resale_Price", aggfunc="max").fillna(0)
+        max_pivot = max_pivot[df_md_filtered.sort_values("Period_sort")["Period"].unique()]
+        
+        project_towns = df_md_filtered.groupby("BUILDING")["Town"].first()
+        l12m_max = last_12m_md.groupby("BUILDING")["Resale_Price"].max().rename("L12M Max")
+
+        result = max_pivot.join([project_towns, l12m_max], how="left").fillna(0).reset_index().rename(columns={"BUILDING": "Project Name"})
+        result.insert(1, "Town", result.pop("Town"))
+        result = result.sort_values(by="L12M Max", ascending=False)
+
+        cols_to_format = [c for c in result.columns if c not in ["Project Name", "Town"]]
+        for col in cols_to_format:
+            result[col] = result[col].map(lambda x: f"${x/1e6:.2f}M" if x > 0 else "-")
+
+        return render.DataTable(result, styles=[{"style": {"padding": "4px 8px", "font-size": "13px"}}, {"cols": [0], "style": {"font-weight": "bold"}}])
+
+    # ---- Table 8D: Project Max PSF ----
+    @render.data_frame
+    def project_max_psf():
+        df_md_filtered, recent_periods, last_12m_md, ft_choice = prepared_table_df()
+        if df_md_filtered.empty:
+            return pd.DataFrame({"Message": ["No data"]})
+
+        psf_pivot = df_md_filtered.pivot_table(index="BUILDING", columns="Period", values="PSF", aggfunc="max").fillna(0)
+        psf_pivot = psf_pivot[df_md_filtered.sort_values("Period_sort")["Period"].unique()]
+        
+        project_towns = df_md_filtered.groupby("BUILDING")["Town"].first()
+        l12m_psf = last_12m_md.groupby("BUILDING")["PSF"].max().rename("L12M Max PSF")
+
+        result = psf_pivot.join([project_towns, l12m_psf], how="left").fillna(0).reset_index().rename(columns={"BUILDING": "Project Name"})
+        result.insert(1, "Town", result.pop("Town"))
+        result = result.sort_values(by="L12M Max PSF", ascending=False)
+
+        cols_to_format = [c for c in result.columns if c not in ["Project Name", "Town"]]
+        for col in cols_to_format:
+            result[col] = result[col].map(lambda x: f"${x:,.0f}" if x > 0 else "-")
+
+        return render.DataTable(result, styles=[{"style": {"padding": "4px 8px", "font-size": "13px"}}, {"cols": [0], "style": {"font-weight": "bold"}}])
+
+    # ---- Table 8E/F: Project Median Helper ----
+    def render_project_median(column_name, is_price=True):
+        df_md_filtered, recent_periods, last_12m_md, ft_choice = prepared_table_df()
+        if df_md_filtered.empty:
+            return pd.DataFrame({"Message": ["No data"]})
+
+        md_pivot = df_md_filtered.pivot_table(index="BUILDING", columns="Period", values=column_name, aggfunc="median").fillna(0)
+        md_pivot = md_pivot[df_md_filtered.sort_values("Period_sort")["Period"].unique()]
+
+        project_towns = df_md_filtered.groupby("BUILDING")["Town"].first()
+        l12m_md_median = last_12m_md.groupby("BUILDING")[column_name].median().rename("L12M Median")
+
+        result = md_pivot.join([project_towns, l12m_md_median], how="left").fillna(0).reset_index().rename(columns={"BUILDING": "Project Name"})
+        result.insert(1, "Town", result.pop("Town"))
+        result = result.sort_values(by="L12M Median", ascending=False)
+
+        cols_to_format = [c for c in result.columns if c not in ["Project Name", "Town"]]
+        for col in cols_to_format:
+            if is_price:
+                result[col] = result[col].map(lambda x: f"${x/1e6:.2f}M" if x > 0 else "-")
+            else:
+                result[col] = result[col].map(lambda x: f"${x:,.0f}" if x > 0 else "-")
+
+        return render.DataTable(result, styles=[{"style": {"padding": "4px 8px", "font-size": "13px"}}, {"cols": [0], "style": {"font-weight": "bold"}}])
+
+    @render.data_frame
+    def project_median_price():
+        return render_project_median("Resale_Price", is_price=True)
+
+    @render.data_frame
+    def project_median_psf():
+        return render_project_median("PSF", is_price=False)    
 
 # Run app
 app = App(app_ui, server)
