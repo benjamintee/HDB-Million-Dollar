@@ -9,9 +9,10 @@ from shiny import render, reactive
 from pathlib import Path
 
 # Load data
-data_path = r"data\clean\HDB_Resale_Transactions_Merged_20260108.csv.gz"
+this_dir = Path(__file__).parent
+data_path = this_dir / "HDB_Resale_Transactions_Merged_20260110.csv.gz"
 df = pd.read_csv(data_path, compression='gzip')
-css_path = Path(__file__).parent / "styles.css"
+css_path = this_dir / "styles.css"
 
 # Ensure a proper date column
 df["date"] = pd.to_datetime(
