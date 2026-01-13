@@ -11,7 +11,7 @@ from htmltools import HTML
 
 # Load data
 this_dir = Path(__file__).parent
-data_path = this_dir / "HDB_Resale_Transactions_Merged_20260110.csv.gz"
+data_path = this_dir / "HDB_Resale_Transactions_Merged_20260113.csv.gz"
 df = pd.read_csv(data_path, compression='gzip')
 css_path = this_dir / "styles.css"
 
@@ -156,11 +156,35 @@ app_ui = ui.page_navbar(
                     ui.nav_panel("Max PSF", ui.output_data_frame("project_max_psf")),
                     ui.nav_panel("Median Price", ui.output_data_frame("project_median_price")),
                     ui.nav_panel("Median PSF", ui.output_data_frame("project_median_psf")),
+                    ui.nav_panel("Median Lease Remaining", ui.output_data_frame("project_median_lease")),
                     id="tab2",  
                     title= "Table 8: Transactions by HDB Projects" + "\u00A0\u00A0",  
                 ),
                 col_widths=[12]
         ),
+        ui.layout_columns(
+                ui.navset_card_tab(
+                    ui.nav_panel("Max Price (Top 3)", ui.output_data_frame("high_max_price")),
+                    ui.nav_panel("Max PSF (Top 3)", ui.output_data_frame("high_max_psf")),
+                    ui.nav_panel("Town-level (Top 3)", ui.output_data_frame("high_town_level")),
+                    id="tab3",
+                    title="Table 9: Historical High Transactions" + "\u00A0\u00A0",
+                ),
+                col_widths=[12]
+            ),
+        ui.hr(),  # Horizontal line
+        ui.div(
+            ui.p(ui.tags.b("Source: "), "HDB, data.gov.sg, ", "OneMap.gov.sg", style="font-size: 12.5px; margin-bottom: 1px;"),
+            ui.p(ui.tags.b("Notes: "), style="font-size: 12.5px; margin-bottom: 1px;"),
+            ui.tags.ul(
+                ui.tags.li("Charts and tables use detailed HDB resale price and transaction data and are based on date of registration of resale transactions."),
+                ui.tags.li("Addresses and geocharacteristics are obtained from OneMap API."),
+                ui.tags.li("The transactions exclude resale transactions that may not reflect the full market price such as resale between relatives and resale of part shares."),
+                ui.tags.li("Remaining lease is the number of years left before the lease ends, and the property is returned to HDB."),
+                style="font-size: 11.5px; color: #555; line-height: 1.2;"
+            ),
+            style="padding: 1px; margin-top: 1px;"
+        )
     ),  
     ui.nav_panel("GEOGRAPHICAL DISTRIBUTION", "Page B content"),  
     ui.nav_panel("ANALYSIS", "Page C content"),  
@@ -917,7 +941,8 @@ def server(input, output, session):
                 {
                     # Bold the Town names in the first column
                     "cols": [0],
-                    "style": {"font-weight": "bold"}
+                    "style": {"font-weight": "bold",
+                "min-width": "220px"}
                 }
             ],
             height="auto",
@@ -995,7 +1020,8 @@ def server(input, output, session):
                 },
                 {
                     "cols": [0], # Bold the Town column
-                    "style": {"font-weight": "bold"}
+                    "style": {"font-weight": "bold",
+                "min-width": "220px"}
                 }
             ],
             height="auto",
@@ -1053,7 +1079,8 @@ def server(input, output, session):
             result,
             styles=[
                 {"style": {"padding": "4px 8px", "font-size": "13px", "line-height": "1.1", "white-space": "nowrap"}},
-                {"cols": [0], "style": {"font-weight": "bold"}}
+                {"cols": [0], "style": {"font-weight": "bold",
+                "min-width": "220px"}}
             ],
             height="auto",
             width="100%"
@@ -1112,7 +1139,8 @@ def server(input, output, session):
             result,
             styles=[
                 {"style": {"padding": "4px 8px", "font-size": "13px", "line-height": "1.1", "white-space": "nowrap"}},
-                {"cols": [0], "style": {"font-weight": "bold"}}
+                {"cols": [0], "style": {"font-weight": "bold",
+                "min-width": "220px"}}
             ],
             height="auto",
             width="100%"
@@ -1168,7 +1196,8 @@ def server(input, output, session):
             result,
             styles=[
                 {"style": {"padding": "4px 8px", "font-size": "13px", "line-height": "1.1", "white-space": "nowrap"}},
-                {"cols": [0], "style": {"font-weight": "bold"}},
+                {"cols": [0], "style": {"font-weight": "bold",
+                "min-width": "220px"}},
                 # Highlight the "All Resale" column in a light grey to distinguish it
                 {"cols": [len(result.columns)-1], "style": {"background-color": "#f8f9fa", "font-style": "italic"}}
             ],
@@ -1188,6 +1217,7 @@ def server(input, output, session):
     @render.data_frame
     def project_volume():
         df_filtered, recent_periods, last_12m_df, ft_choice = prepared_table_df()
+        df_filtered = df_filtered[df_filtered["BUILDING"] != "NIL"]
         if df_filtered.empty:
             return pd.DataFrame({"Result": ["No data"]})
 
@@ -1226,12 +1256,14 @@ def server(input, output, session):
         result[count_cols] = result[count_cols].astype(int)
 
         return render.DataTable(result, styles=[{"style": {"padding": "4px 8px", "font-size": "13px"}}, 
-            {"cols": [0], "style": {"font-weight": "bold"}}])
+            {"cols": [0], "style": {"font-weight": "bold",
+                "min-width": "220px"}}])
 
     # ---- Table 8B: Project Share ----
     @render.data_frame
     def project_share():
         df_md_filtered, recent_periods, last_12m_md, ft_choice = prepared_table_df()
+        df_md_filtered = df_md_filtered[df_md_filtered["BUILDING"] != "NIL"]
         if df_md_filtered.empty:
             return pd.DataFrame({"Message": ["No data"]})
 
@@ -1263,12 +1295,14 @@ def server(input, output, session):
         for col in cols_to_format:
             result[col] = result[col].map("{:.1f}%".format)
 
-        return render.DataTable(result, styles=[{"style": {"padding": "4px 8px", "font-size": "13px"}}, {"cols": [0], "style": {"font-weight": "bold"}}])
+        return render.DataTable(result, styles=[{"style": {"padding": "4px 8px", "font-size": "13px"}}, {"cols": [0], "style": {"font-weight": "bold",
+                "min-width": "220px"}}])
 
     # ---- Table 8C: Project Max Price ----
     @render.data_frame
     def project_max_price():
         df_md_filtered, recent_periods, last_12m_md, ft_choice = prepared_table_df()
+        df_md_filtered = df_md_filtered[df_md_filtered["BUILDING"] != "NIL"]
         if df_md_filtered.empty:
             return pd.DataFrame({"Message": ["No data"]})
 
@@ -1286,12 +1320,14 @@ def server(input, output, session):
         for col in cols_to_format:
             result[col] = result[col].map(lambda x: f"${x/1e6:.2f}M" if x > 0 else "-")
 
-        return render.DataTable(result, styles=[{"style": {"padding": "4px 8px", "font-size": "13px"}}, {"cols": [0], "style": {"font-weight": "bold"}}])
+        return render.DataTable(result, styles=[{"style": {"padding": "4px 8px", "font-size": "13px"}}, {"cols": [0], "style": {"font-weight": "bold",
+                "min-width": "220px"}}])
 
     # ---- Table 8D: Project Max PSF ----
     @render.data_frame
     def project_max_psf():
         df_md_filtered, recent_periods, last_12m_md, ft_choice = prepared_table_df()
+        df_md_filtered = df_md_filtered[df_md_filtered["BUILDING"] != "NIL"]
         if df_md_filtered.empty:
             return pd.DataFrame({"Message": ["No data"]})
 
@@ -1309,11 +1345,13 @@ def server(input, output, session):
         for col in cols_to_format:
             result[col] = result[col].map(lambda x: f"${x:,.0f}" if x > 0 else "-")
 
-        return render.DataTable(result, styles=[{"style": {"padding": "4px 8px", "font-size": "13px"}}, {"cols": [0], "style": {"font-weight": "bold"}}])
+        return render.DataTable(result, styles=[{"style": {"padding": "4px 8px", "font-size": "13px"}}, {"cols": [0], "style": {"font-weight": "bold",
+                "min-width": "220px"}}])
 
     # ---- Table 8E/F: Project Median Helper ----
     def render_project_median(column_name, is_price=True):
         df_md_filtered, recent_periods, last_12m_md, ft_choice = prepared_table_df()
+        df_md_filtered = df_md_filtered[df_md_filtered["BUILDING"] != "NIL"]
         if df_md_filtered.empty:
             return pd.DataFrame({"Message": ["No data"]})
 
@@ -1334,7 +1372,8 @@ def server(input, output, session):
             else:
                 result[col] = result[col].map(lambda x: f"${x:,.0f}" if x > 0 else "-")
 
-        return render.DataTable(result, styles=[{"style": {"padding": "4px 8px", "font-size": "13px"}}, {"cols": [0], "style": {"font-weight": "bold"}}])
+        return render.DataTable(result, styles=[{"style": {"padding": "4px 8px", "font-size": "13px"}}, {"cols": [0], "style": {"font-weight": "bold",
+                "min-width": "220px"}}])
 
     @render.data_frame
     def project_median_price():
@@ -1342,7 +1381,149 @@ def server(input, output, session):
 
     @render.data_frame
     def project_median_psf():
-        return render_project_median("PSF", is_price=False)    
+        return render_project_median("PSF", is_price=False)
+
+    # ---- Table 8G: Project Median Lease Remaining ----
+    @render.data_frame
+    def project_median_lease():
+        # 1. Get filtered Million-Dollar data
+        df_md_filtered, recent_periods, last_12m_md, ft_choice = prepared_table_df()
+        
+        # 2. Filter out "NIL" Buildings
+        df_md_filtered = df_md_filtered[df_md_filtered["BUILDING"] != "NIL"]
+        
+        if df_md_filtered.empty:
+            return pd.DataFrame({"Message": ["No data"]})
+
+        # 3. Pivot for Median Lease Remaining
+        # Group by Project (BUILDING) and Period
+        lease_pivot = df_md_filtered.pivot_table(
+            index="BUILDING", 
+            columns="Period", 
+            values="Lease.Remain", 
+            aggfunc="median"
+        ).fillna(0)
+
+        # 4. Ensure Chronological Column Order
+        lease_pivot = lease_pivot[df_md_filtered.sort_values("Period_sort")["Period"].unique()]
+
+        # 5. Metadata and L12M Benchmarks
+        project_towns = df_md_filtered.groupby("BUILDING")["Town"].first()
+        
+        # Filter NIL from L12M slice before grouping
+        l12m_clean = last_12m_md[last_12m_md["BUILDING"] != "NIL"]
+        l12m_lease_median = l12m_clean.groupby("BUILDING")["Lease.Remain"].median().rename("L12M Median Lease")
+
+        # 6. Combine everything
+        result = lease_pivot.join([project_towns, l12m_lease_median], how="left").fillna(0).reset_index()
+        result = result.rename(columns={"BUILDING": "Project Name"})
+        
+        # Move Town to the second column
+        result.insert(1, "Town", result.pop("Town"))
+        
+        # Sort by L12M Median (Newest buildings at the top)
+        result = result.sort_values(by="L12M Median Lease", ascending=False)
+
+        # 7. Formatting: Apply " Yrs" suffix to all numeric columns
+        cols_to_format = [c for c in result.columns if c not in ["Project Name", "Town"]]
+        for col in cols_to_format:
+            # We use 1 decimal place to show half-years in medians
+            result[col] = result[col].map(lambda x: f"{x:.0f} Yrs" if x > 0 else "-")
+
+        # 8. Render with standard Table 8 styling
+        return render.DataTable(
+            result,
+            styles=[
+                {"style": {"padding": "4px 8px", "font-size": "13px", "white-space": "nowrap"}}, 
+                {"cols": [0], "style": {"font-weight": "bold", "min-width": "220px"}}
+            ]
+        )
+
+    # ---- Table 9 Helper: Ranking Transactions with Highlighting ----
+    def get_top_transactions(group_cols, sort_col):
+        df_md_filtered, recent_periods, last_12m_md, ft_choice = prepared_table_df()
+        
+        if df_md_filtered.empty:
+            return pd.DataFrame({"Message": ["No data available"]})
+
+        # 1. Select and initial copy
+        result = df_md_filtered[[
+            "Flat_Type", "date", "Town", "BUILDING", "ADDRESS", 
+            "Flat_Model", "Floor_Area_Sqm", "Storey_Range", "Lease.Remain", 
+            "Resale_Price", "PSF"
+        ]].copy()
+
+        # 2. Format the Date column (MMM YYYY)
+        result["Date"] = result["date"].dt.strftime("%b %Y").str.upper()
+        
+        # 3. Rename columns
+        result = result.rename(columns={
+            "Flat_Type": "Flat Type",
+            "BUILDING": "Project Name",
+            "ADDRESS": "Address",
+            "Flat_Model": "Flat Model",
+            "Floor_Area_Sqm": "Flat Size",
+            "Storey_Range": "Storey Range",
+            "Lease.Remain": "Lease Remaining",
+            "Resale_Price": "Price"
+        })
+
+        mapped_groups = [c.replace("_", " ") if c == "Flat_Type" else c for c in group_cols]
+
+        # 4. Rank and Filter for Top 3
+        # We sort first, then assign a rank within each group
+        result = result.sort_values(by=mapped_groups + [sort_col], ascending=[True] * len(mapped_groups) + [False])
+        result["Rank"] = result.groupby(mapped_groups).cumcount() + 1
+        result = result[result["Rank"] <= 3]
+
+        # 5. Final column selection
+        final_cols = [
+            "Rank", "Flat Type", "Date", "Town", "Project Name", "Address", 
+            "Flat Model", "Flat Size", "Storey Range", "Lease Remaining", 
+            "Price", "PSF"
+        ]
+        result = result[final_cols]
+
+        # 6. Formatting Numerics
+        result["Price"] = result["Price"].map(lambda x: f"${x/1e6:.2f}M" if isinstance(x, (int, float)) else x)
+        result["PSF"] = result["PSF"].map(lambda x: f"${x:,.0f}" if isinstance(x, (int, float)) else x)
+        result["Flat Size"] = result["Flat Size"].map(lambda x: f"{x:.0f} sqm" if isinstance(x, (int, float)) else x)
+        result["Lease Remaining"] = result["Lease Remaining"].map(lambda x: f"{x:.0f} Yrs" if isinstance(x, (int, float)) else x)
+
+        # 7. Render with Conditional Styling for Rank 1
+        return render.DataTable(
+            result,
+            styles=[
+                # Global Styles
+                {"style": {"padding": "4px 8px", "font-size": "12.5px", "white-space": "nowrap"}},
+                
+                # Column Widths (Adjusted indices because Rank is now col 0)
+                {"cols": [1, 2, 3], "style": {"min-width": "80px"}},
+                {"cols": [4], "style": {"min-width": "120px"}},
+                {"cols": [5], "style": {"min-width": "180px"}},
+                {"cols": [6, 7], "style": {"min-width": "60px"}},
+                {"cols": [10, 11], "style": {"min-width": "60px", "font-weight": "bold"}},
+                
+                # Conditional Highlight: If Rank (Col 0) is 1, highlight the row
+                {
+                    "rows": [i for i, r in enumerate(result["Rank"]) if r == 1],
+                    "style": {"background-color": "#f8f9fa"}
+                }
+            ],
+            height="auto",
+            width="100%"
+        )
+    @render.data_frame
+    def high_max_price():
+        return get_top_transactions(["Flat_Type"], "Price")
+
+    @render.data_frame
+    def high_max_psf():
+        return get_top_transactions(["Flat_Type"], "PSF")
+
+    @render.data_frame
+    def high_town_level():
+        return get_top_transactions(["Town", "Flat_Type"], "Price")
 
 # Run app
 app = App(app_ui, server)

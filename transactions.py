@@ -364,8 +364,7 @@ def main():
     final = final.drop(columns=cols_to_drop, errors="ignore")
 
     run_date = datetime.now(UTC).strftime("%Y%m%d")
-    out = Path("data/clean") / f"HDB_Resale_Transactions_Merged_{run_date}.csv.gz"
-    out.parent.mkdir(parents=True, exist_ok=True)
+    out = f"HDB_Resale_Transactions_Merged_{run_date}.csv.gz"
     final.to_csv(
         out,
         index=False,
