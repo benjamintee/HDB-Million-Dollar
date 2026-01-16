@@ -1,10 +1,10 @@
 # Million Dollar HDB Dashboard
 
 ## Overview
-This interactive dashboard provides a comprehensive overview of trends and insights relating to **Million Dollar HDB resale flat transactions** in Singapore. As these transactions represent the upper echelon of the public housing market, this tool allows users to analyze the specific market dynamics, geographical distributions, and price movements that define this high-end segment.
+This interactive dashboard provides a comprehensive overview of trends and insights relating to **Million Dollar HDB resale flat transactions** in Singapore. As these transactions tend to form and shape market expectations about th public housing market, this tool allows users to analyze the specific market dynamics, geographical distributions, and price movements to analyse emerging trends. 
 
 ## Data Sources & Methodology
-Transparency in data is central to this analysis. The application utilizes the following resources:
+The application utilizes the following resources:
 
 * **HDB Resale Data:** All transaction records are sourced from the [Official HDB Resale Dataset on Data.gov.sg](https://beta.data.gov.sg/datasets/d_8b84c4ee58e3cfc0ece0d773c8ca6abc/view).
 * **Geospatial Data:** To map and analyze the proximity of transactions, addresses were geocoded using the **OneMap API**. Detailed information on the geocoding process and technical implementation can be found in the [OneMap.gov.sg API Documentation](https://www.onemap.gov.sg/apidocs/).
