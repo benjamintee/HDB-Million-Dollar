@@ -181,7 +181,7 @@ app_ui = ui.page_navbar(
                 ui.tags.li("Addresses and geocharacteristics are obtained from OneMap API."),
                 ui.tags.li("The transactions exclude resale transactions that may not reflect the full market price such as resale between relatives and resale of part shares."),
                 ui.tags.li("Remaining lease is the number of years left before the lease ends, and the property is returned to HDB."),
-                style="font-size: 11.5px; color: #555; line-height: 1.2;"
+                style="font-size: 12px; color: #555; line-height: 1.2;"
             ),
             style="padding: 1px; margin-top: 1px;"
         )
@@ -193,7 +193,8 @@ app_ui = ui.page_navbar(
     ui.nav_control(
         ui.div(
             f"Last updated: {up_date}",
-            style="font-size: 13px; color: #666; padding-top: 12px; margin-right: 15px;"
+            style="font-size: 13px; color: #666; padding-top: 12px; margin-right: 15px;", 
+            class_="last-updated"
         )
     ),
     ui.nav_control(
@@ -202,17 +203,142 @@ app_ui = ui.page_navbar(
             href="https://github.com/benjamintee/HDB-Million-Dollar.git",
             target="_blank",
             title="View source on GitHub",
-            style="color: inherit; text-decoration: none;"
+            class_="github-link"
         )
     ),
     header=ui.tags.head(
-        HTML('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">')
+        ui.HTML('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">'),
+    
+        # Import font for the page and set it for the body of the page 
+        ui.tags.style("""
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+
+            /* 1. Global Font and Background */
+            html, body {
+                font-family: 'Inter', sans-serif !important;
+                background-color: #f8fafc; 
+            }
+
+            /* 2. Header / Navbar Customization */
+            .navbar {
+                background-color: #064e3b !important; /* Heritage Emerald */
+                border-bottom: 3px solid #059669;    /* Subtle lighter green accent line */
+            }
+
+            /* 3. Specific Navbar Text and Links (Restricted to .navbar) */
+            .navbar .navbar-brand {
+                color: #ffffff !important;
+                font-weight: 550;
+            }
+
+            .navbar .nav-link {
+                color: rgba(255, 255, 255, 0.85) !important;
+                font-weight: 500;
+                transition: all 0.2s ease-in-out;
+            }
+
+            .navbar .nav-link:hover {
+                color: #ffffff !important;
+            }
+
+            .navbar .nav-link.active {
+                color: #ffffff !important;
+                font-weight: 600;
+            }
+
+            /* 4. Navbar Metadata and Icons */
+            .navbar-text, .navbar .last-updated {
+                color: rgba(255, 255, 255, 0.85) !important;
+                font-size: 0.85rem;
+                font-weight: 400;
+            }
+
+            .navbar .github-link, .navbar .nav-link i.fa-github {
+                color: rgba(255, 255, 255, 0.85) !important;
+                transition: transform 0.2s ease;
+            }
+
+            .navbar .nav-link:hover i.fa-github {
+                color: #ffffff !important;
+                transform: scale(1.1);
+            }
+
+            /* 5. Ensure Table Content stays readable */
+            /* Styling the table header */
+            table thead th, 
+            .shiny-data-frame thead th,
+            .dataTables_wrapper table thead th {
+                font-size: 13px !important;
+                font-weight: 600 !important; /* Semi-bold for better readability */
+                vertical-align: middle !important;
+            }
+            .shiny-data-frame {
+                font-family: 'Inter', sans-serif !important;
+                color: #2d3436;
+            }
+            /* 6. Color the text in the table tabs in grey */
+            .card .nav-link {
+                color: #94a3b8 !important; /* Soft grey */
+                font-weight: 500;
+                border-bottom: 2px solid transparent;
+                transition: color 0.2s ease-in-out;
+            }
+
+            .card .nav-link:hover {
+                color: #475569 !important; /* Medium charcoal on hover */
+                background-color: transparent !important;
+            }
+
+            .card .nav-link.active {
+                color: #070708 !important; 
+                font-weight: 550;
+                background-color: transparent !important;
+            }
+
+            div.main.bslib-gap-spacing.html-fill-container {
+                padding-right: 5px !important;
+                padding-left: 8px !important;
+                padding-top: 5px !important;
+                padding-bottom: 8px !important;
+            }
+
+            /* EDITING THE UI INPUT SELECTORS */
+            /* 1. Reduce the size of the Label (e.g., "Flat Type:") */
+            .control-label {
+                font-size: 0.85rem !important;
+                font-weight: 600;
+                margin-bottom: 4px;
+            }
+
+            /* 2. Reduce the size of the selected items (the "pills") and the input text */
+            .selectize-input, .selectize-input input {
+                font-size: 0.85rem !important;
+                min-height: 32px !important;
+                line-height: 1.2 !important;
+            }
+
+            /* 3. Reduce the size of the options in the dropdown menu */
+            .selectize-dropdown {
+                font-size: 0.85rem !important;
+                line-height: 1.2 !important;
+            }
+
+            /* 4. Specifically for 'multiple=True', shrink the item badges */
+            .selectize-control.multi .selectize-input > div {
+                font-size: 0.8rem !important;
+                padding: 1px 5px !important;
+                margin: 2px !important;
+            }
+
+            hr {
+                margin-top: 0.5rem !important;
+                margin-bottom: 0.5rem !important;
+            }
+        """)
     ),
-    title="MILLION DOLLAR FLATS IN SINGAPORE",  
+    title="MILLION DOLLAR HDB FLATS IN SINGAPORE",  
     id="page",  
 )  
-
-
 
 # Helper function to filter data
 def filter_period(df, period, n=10):
@@ -235,6 +361,46 @@ def filter_period(df, period, n=10):
         df_filtered["Period"] = df_filtered["Period_sort"].dt.year.astype(str)
     
     return df_filtered
+
+# Set custom styles for the charts on Page 1. 
+def apply_custom_theme(fig):
+    fig.update_layout(
+        # Background & Font
+        paper_bgcolor='rgba(0,0,0,0)', # Transparent to match card
+        plot_bgcolor='white',          # White plot area
+        font=dict(family="Inter, sans-serif", color="#2d3436"),
+        
+        # Legend Styling
+        legend=dict(font=dict(size=13)),
+        
+        # Chart Title / Labels (If using fig.update_layout(title=...))
+        title=dict(font=dict(size=12.5, family="Inter, sans-serif", weight="bold")),
+        
+        margin=dict(t=10, b=20, l=40, r=20)
+    )
+
+    # X-Axis Styling
+    fig.update_xaxes(
+        showgrid=False,               # Remove vertical grid lines
+        linecolor='#475569',          # Dark grey x-axis line
+        linewidth=1.5,
+        title=dict(font=dict(size=13)), # Axis Label
+        tickfont=dict(size=12),       # Tick Labels
+        zeroline=False
+    )
+
+    # Y-Axis Styling
+    fig.update_yaxes(
+        showgrid=True,
+        gridcolor='#e2e8f0',          # Lighter grey major grid lines
+        linecolor='#475569',          # Dark grey y-axis line
+        linewidth=1.5,
+        title=dict(font=dict(size=13), standoff=8), # Axis Label
+        tickfont=dict(size=12),       # Tick Labels
+        zeroline=False
+    )
+    
+    return fig
 
 # Server
 def server(input, output, session):
@@ -281,10 +447,10 @@ def server(input, output, session):
         fig.add_scatter(
             x=totals["Period_sort"],
             y=totals["Total"],
-            text=totals["Total"],
+            text=[f"{int(val):,}" for val in totals["Total"]],
             mode="text",
             textposition="top center",
-            textfont=dict(size=12),
+            textfont=dict(size=14, weight = "bold"),
             showlegend=False
         )
 
@@ -297,17 +463,19 @@ def server(input, output, session):
             ),
             xaxis_title=period_choice,
             yaxis_title="Number of Transactions",
-            yaxis=dict(range=[0, totals["Total"].max() * 1.12]),
+            yaxis=dict(range=[0, totals["Total"].max() * 1.12], tickformat=","),
             legend=dict(
                 orientation="h",
                 yanchor="bottom",
-                y=1.05,
+                y=1.00,
                 xanchor="center",
                 x=0.5,
                 traceorder="reversed"
             ),
             legend_title_text=None
         )
+
+        fig = apply_custom_theme(fig)
 
         return fig
 
@@ -335,14 +503,16 @@ def server(input, output, session):
             markers=True
         )
 
+        fig.update_traces(line=dict(width=3), marker=dict(size=10))
+
         # Add % labels above points
         fig.add_scatter(
             x=share["Period_sort"],
-            y=share["MD_Share_Percent"] + 0.12,
+            y=share["MD_Share_Percent"] + 0.14,
             text=share["MD_Share_Percent"].astype(str) + "%",
             mode="text",
             textposition="top center",
-            textfont=dict(size=12),
+            textfont=dict(size=14, weight = "bold"),
             showlegend=False
         )
 
@@ -358,6 +528,7 @@ def server(input, output, session):
             yaxis=dict(range=[0, share["MD_Share_Percent"].max() * 1.15])
         )
 
+        fig = apply_custom_theme(fig)
         return fig
 
     # ---- Chart 3: Distribution of resale prices ----
@@ -433,7 +604,7 @@ def server(input, output, session):
         fig.update_traces(
             textposition="inside",
             insidetextanchor="middle",
-            textfont=dict(size=11, color="white")
+            textfont=dict(size=13, color="white", weight = "bold")
         )
 
         # ---- Axis and Legend formatting ----
@@ -458,13 +629,14 @@ def server(input, output, session):
                 traceorder="reversed",  # 2. Reverse the legend display order
                 orientation="v",
                 yanchor="top",
-                y=1,
+                y=0.98,
                 xanchor="left",
                 x=1.02
             ),
             margin=dict(r=120)
         )
 
+        fig = apply_custom_theme(fig)
         return fig
 
     # ---- Chart 4: Resale PSF Trends ----
@@ -531,17 +703,17 @@ def server(input, output, session):
         # Rename legend entries
         fig.for_each_trace(lambda t: t.update(
             name={
-                "Max_PSF": "Max PSF",
-                "Median_PSF": "Median PSF",
-                "Median_PSF_All": "Median PSF (All Resale)"
+                "Max_PSF": "MAX PSF",
+                "Median_PSF": "MEDIAN PSF",
+                "Median_PSF_All": "MEDIAN PSF (ALL RESALE)"
             }[t.name]
         ))
 
         # ---- Add annotations (correct way) ----
         series_map = {
-            "Max PSF": "Max_PSF",
-            "Median PSF": "Median_PSF",
-            "Median PSF (All Resale)": "Median_PSF_All"
+            "MAX PSF": "Max_PSF",
+            "MEDIAN PSF": "Median_PSF",
+            "MEDIAN PSF (ALL RESALE)": "Median_PSF_All"
         }
 
         for trace in fig.data:
@@ -550,7 +722,7 @@ def server(input, output, session):
                 y = r[col]
                 if pd.isna(y): continue
 
-                label = f"{int(round(y)):,}" if y >= 1000 else f"{round(y,1)}"
+                label = f"{int(round(y)):,}"
 
                 fig.add_annotation(
                     # 2. Ensure x matches the string in the dataframe exactly
@@ -561,7 +733,7 @@ def server(input, output, session):
                     # 3. Explicitly link to data coordinates
                     xref="x",
                     yref="y",
-                    font=dict(color="white", size=10), # Slightly smaller to avoid overlap
+                    font=dict(color="white", size=13, weight = "bold"), 
                     bgcolor=trace.line.color,
                     bordercolor=trace.line.color,
                     borderpad=3,
@@ -577,17 +749,21 @@ def server(input, output, session):
                 ticktext=psf["Period"]
             ),
             xaxis_title=period_choice,
-            yaxis_title="Price per Square Foot (PSF)",
+            yaxis=dict(
+                tickformat="," 
+            ),
+            yaxis_title="Price per Square Foot, PSF ($)",
             legend=dict(
                 orientation="h",
                 yanchor="bottom",
-                y=1.08,
+                y=1.02,
                 xanchor="center",
                 x=0.5
             ),
             legend_title_text=None
         )
 
+        fig = apply_custom_theme(fig)
         return fig
 
     # ---- Chart 5: Median PSF/Price by Flat Type ----
@@ -679,11 +855,11 @@ def server(input, output, session):
                 showarrow=False,
                 xanchor="left",
                 xshift=12,
-                font=dict(color=pt["color"], size=11, family="Arial Black"),
+                font=dict(color=pt["color"], size=13),
                 bgcolor="rgba(255,255,255,0.9)",
                 bordercolor=pt["color"],
-                borderwidth=1,
-                borderpad=2,
+                borderwidth=1.2,
+                borderpad=4,
                 align="left"
             )
 
@@ -694,13 +870,14 @@ def server(input, output, session):
                 tickvals=agg_df["Period_sort_str"].unique(), 
                 ticktext=agg_df["Period"].unique()
             ),
-            yaxis=dict(showgrid=True, gridcolor='lightgrey'),
-            legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5),
+            yaxis=dict(showgrid=True, gridcolor='lightgrey', tickformat="," ),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
             legend_title_text=None, 
-            margin=dict(t=20), 
+            margin=dict(t=10), 
             hovermode="x unified"
         )
 
+        fig = apply_custom_theme(fig)
         return fig       
 
     # ---- Chart 6: Additional Logic to update UI based on reactive function --- 
@@ -754,6 +931,7 @@ def server(input, output, session):
         df_md["PSF"] = df_md["Resale_Price"] / df_md["Floor_Area_Sqm"] / 10.764
         metric_choice = input.select_PSF_town()
         y_col = "Median_PSF" if metric_choice == "PSF" else "Median_Price"
+        y_label = "Median PSF ($)" if metric_choice == "PSF" else "Median Price ($)"
         
         agg_df = (
             df_md.groupby(["Period_sort", "Period", "Town"], observed=False)
@@ -780,8 +958,10 @@ def server(input, output, session):
             y=y_col,
             color="Town",
             markers=True,
-            labels={y_col: f"Median {metric_choice} ($)", "Period_sort_str": period_choice}
+            labels={y_col: y_label, "Period_sort_str": period_choice}
         )
+
+        fig.update_traces(line=dict(width=3), marker=dict(size=10))
 
         # 5. Label Deconfliction (Updated to filter out "stale" lines)
         last_points = []
@@ -831,7 +1011,7 @@ def server(input, output, session):
                 showarrow=False,
                 xanchor="left",    
                 xshift=12,         # Gap between the marker and the text
-                font=dict(color=pt["color"], size=11, family="Arial Black"),
+                font=dict(color=pt["color"], size=13),
                 bgcolor="rgba(255,255,255,0.9)",
                 bordercolor=pt["color"],
                 borderwidth=1,
@@ -845,12 +1025,14 @@ def server(input, output, session):
                 tickvals=plot_df["Period_sort_str"].unique(), 
                 ticktext=plot_df["Period"].unique()
             ),
-            legend=dict(orientation="h", yanchor="bottom", y=1.05, xanchor="center", x=0.5),
+            yaxis=dict(tickformat=","), 
+            legend=dict(orientation="h", yanchor="top", y=1.15, xanchor="center", x=0.5),
             legend_title_text=None, 
-            margin=dict(t=20),
+            margin=dict(t=5),
             hovermode="x unified"
         )
 
+        fig = apply_custom_theme(fig)
         return fig
 
     # ---- Chart 7: Filtering Data to Show Trends by Town ----
@@ -896,6 +1078,55 @@ def server(input, output, session):
         
         return df_filtered, recent_periods, last_12m_df, ft_choice
 
+    def apply_heatmap_style(df, target_cols_indices):
+        if df.empty or not target_cols_indices:
+            return []
+
+        # 1. Extract and convert to numeric for math
+        # We use the full df here to keep indices aligned
+        numeric_df = df.apply(pd.to_numeric, errors='coerce')
+        data_subset = numeric_df.iloc[:, target_cols_indices]
+        
+        v_max = data_subset.max().max()
+        v_min = data_subset[data_subset > 0].min().min()
+        if pd.isna(v_min): v_min = 0
+        v_range = v_max - v_min if v_max > v_min else 1
+
+        styles = []
+        
+        # 2. Iterate using the indices relative to the FULL dataframe
+        for col_idx in target_cols_indices:
+            for row_idx in range(len(df)):
+                # Pull from numeric_df using the actual column index from the original table
+                val = numeric_df.iloc[row_idx, col_idx]
+                
+                # Handle Zero or NaN
+                if pd.isna(val) or val == 0:
+                    styles.append({
+                        "rows": [row_idx],
+                        "cols": [col_idx],
+                        "style": {
+                            "background-color": "#f1f5f9",
+                        }
+                    })
+                    continue
+
+                # 3. Apply Power Scale
+                norm = (val - v_min) / v_range
+                norm_adj = norm ** 2 
+                alpha = 0.05 + (norm_adj * 0.45)
+                
+                styles.append({
+                    "rows": [row_idx],
+                    "cols": [col_idx],
+                    "style": {
+                        "background-color": f"rgba(6, 78, 59, {alpha:.2f})",
+                        "color": "#070708",
+                        "font-weight": "600" if norm > 0.75 else "normal"
+                    }
+                })
+        return styles
+
     # ---- Chart 7: Filtering Data to Show Trends by Town ----
     # 7A: Volume Trends
     @render.data_frame
@@ -905,48 +1136,49 @@ def server(input, output, session):
         if df_filtered.empty:
             return pd.DataFrame({"Result": ["No data for selection"]})
 
+        # 1. Pivot and Sort
         pivot = df_filtered.pivot_table(
-            index="Town", 
-            columns="Period", 
-            values="Resale_Price", 
-            aggfunc="count"
+            index="Town", columns="Period", values="Resale_Price", aggfunc="count"
         ).fillna(0)
+        trend_cols = df_filtered.sort_values("Period_sort")["Period"].unique()
+        pivot = pivot[trend_cols]
 
-        # Sort columns based on Period_sort to ensure chronological order in the table
-        # Filter_period helper makes Period_sort a datetime, so this works:
-        pivot = pivot[df_filtered.sort_values("Period_sort")["Period"].unique()]
-
-        # Add Last 12 Months column
+        # 2. Summary Columns
         l12m = last_12m_df.groupby("Town").size().rename("Last 12 Months")
+        df_md_total = df[df["Resale_Price"] >= 1_000_000].copy()
+        if ft_choice != "All":
+            df_md_total = df_md_total[df_md_total["Flat_Type"] == ft_choice]
+        cumulative = df_md_total.groupby("Town").size().rename("Historical All")
         
-        # Combine
-        result = pivot.join(l12m, how="left").fillna(0).astype(int)
-        result.insert(0, "Flat Type", ft_choice)
+        # 3. Combine and Reset Index
+        result = pivot.join(l12m, how="left").join(cumulative, how="left").fillna(0).astype(int)
+        result = result.reset_index() # "Town" is now index 0
+        result.insert(1, "Flat Type", ft_choice) # "Flat Type" is index 1
         
-        # Sort by the value in the 'Last 12 Months'
-        result = result.sort_values(by="Last 12 Months", ascending=False).reset_index()
-        
+        result = result.sort_values(by="Last 12 Months", ascending=False)
+
+        # 4. Define Column Indices for Styling
+        n_cols = len(result.columns)
+        # Period cells start at index 2 and end before the last two summary columns
+        period_col_indices = list(range(2, n_cols - 2))
+        l12m_idx = n_cols - 2
+        hist_idx = n_cols - 1
+
+        # 5. Dynamic Coloring Logic (Heatmap)
+        heatmap_styles = apply_heatmap_style(result, period_col_indices)
+
+        # 6. Final Render
         return render.DataTable(
             result,
             styles=[
-                {
-                    # Styling for every cell in the data table
-                    "style": {
-                        "padding": "4px 8px", 
-                        "font-size": "13.5px", 
-                        "line-height": "1.1",
-                        "white-space": "nowrap"
-                    }
-                },
-                {
-                    # Bold the Town names in the first column
-                    "cols": [0],
-                    "style": {"font-weight": "bold",
-                "min-width": "220px"}
-                }
+                {"style": {"padding": "4px 8px", "font-size": "13px", "line-height": "1.1", "white-space": "nowrap"}},
+                {"cols": [0], "style": {"font-weight": "bold", "min-width": "220px"}},
+                # Static highlighting for summary columns
+                {"cols": [l12m_idx, hist_idx], "style": {"background-color": "#f8fafc", "font-weight": "600"}},
+                # Inject dynamic heatmap styles
+                *heatmap_styles 
             ],
-            height="auto",
-            width="100%"
+            height="auto"
         )
     # Chart 7B: Share of transactions by Town 
     @render.data_frame
@@ -1010,19 +1242,9 @@ def server(input, output, session):
         return render.DataTable(
             result,
             styles=[
-                {
-                    "style": {
-                        "padding": "4px 8px", 
-                        "font-size": "13px", 
-                        "line-height": "1.1",
-                        "white-space": "nowrap"
-                    }
-                },
-                {
-                    "cols": [0], # Bold the Town column
-                    "style": {"font-weight": "bold",
-                "min-width": "220px"}
-                }
+                {"style": {"padding": "4px 8px", "font-size": "13px", "line-height": "1.1","white-space": "nowrap"}},
+                {"cols": [0], "style": {"font-weight": "bold", "min-width": "220px"}}, 
+                {"cols": [len(result.columns)-1, len(result.columns)-2], "style": {"background-color": "#f8fafc", "font-weight": "600"}}
             ],
             height="auto",
             width="100%"
@@ -1063,24 +1285,30 @@ def server(input, output, session):
         l12m_max = last_12m_md.groupby("Town")["Resale_Price"].max().rename("L12M Max")
 
         # 6. Final Join and Sort
-        result = max_pivot.join([historical_max, l12m_max], how="left").fillna(0).reset_index()
+        result = max_pivot.join([l12m_max, historical_max], how="left").fillna(0).reset_index()
         result.insert(1, "Flat Type", ft_choice)
-        result = result.sort_values(by= "ATH Max", ascending=False)
+        result = result.sort_values(by= "L12M Max", ascending=False)
 
-        # 7. Formatting: Convert to "$X.XXM" strings
+        # 7. Generate styles using the updated helper
+        n_cols = len(result.columns)
+        period_indices = list(range(2, n_cols - 2)) 
+        heatmap_styles = apply_heatmap_style(result, period_indices)
+
+        # 8. Formatting: Convert to "$X.XXM" strings
         cols_to_format = [c for c in result.columns if c not in ["Town", "Flat Type"]]
         for col in cols_to_format:
             result[col] = result[col].apply(
                 lambda x: f"${x/1_000_000:.2f}M" if x > 0 else "-"
             )
 
-        # 8. Render with same compact styling
+        # 9. Render with same compact styling
         return render.DataTable(
             result,
             styles=[
                 {"style": {"padding": "4px 8px", "font-size": "13px", "line-height": "1.1", "white-space": "nowrap"}},
-                {"cols": [0], "style": {"font-weight": "bold",
-                "min-width": "220px"}}
+                {"cols": [0], "style": {"font-weight": "bold", "min-width": "220px"}}, 
+                {"cols": [len(result.columns)-1, len(result.columns)-2], "style": {"background-color": "#f8fafc", "font-weight": "600"}},
+                *heatmap_styles
             ],
             height="auto",
             width="100%"
@@ -1123,24 +1351,30 @@ def server(input, output, session):
         l12m_psf = last_12m_md.groupby("Town")["PSF"].max().rename("L12M Max PSF")
 
         # 6. Final Join and Sort
-        result = psf_pivot.join([historical_psf, l12m_psf], how="left").fillna(0).reset_index()
+        result = psf_pivot.join([l12m_psf, historical_psf], how="left").fillna(0).reset_index()
         result.insert(1, "Flat Type", ft_choice)
         result = result.sort_values(by="L12M Max PSF", ascending=False)
 
-        # 7. Formatting: Convert to "$X,XXX" strings
+        # 7. Generate styles using the updated helper
+        n_cols = len(result.columns)
+        period_indices = list(range(2, n_cols - 2)) 
+        heatmap_styles = apply_heatmap_style(result, period_indices)
+
+        # 8. Formatting: Convert to "$X,XXX" strings
         cols_to_format = [c for c in result.columns if c not in ["Town", "Flat Type"]]
         for col in cols_to_format:
             result[col] = result[col].apply(
                 lambda x: f"${x:,.0f}" if x > 0 else "-"
             )
 
-        # 8. Render with compact styling
+        # 9. Render with compact styling
         return render.DataTable(
             result,
             styles=[
                 {"style": {"padding": "4px 8px", "font-size": "13px", "line-height": "1.1", "white-space": "nowrap"}},
-                {"cols": [0], "style": {"font-weight": "bold",
-                "min-width": "220px"}}
+                {"cols": [0], "style": {"font-weight": "bold", "min-width": "220px"}}, 
+                {"cols": [len(result.columns)-1, len(result.columns)-2], "style": {"background-color": "#f8fafc", "font-weight": "600"}},
+                *heatmap_styles
             ],
             height="auto",
             width="100%"
@@ -1176,7 +1410,7 @@ def server(input, output, session):
 
         # Calculate Medians
         l12m_md_median = last_12m_md.groupby("Town")[column_name].median().rename("L12M MD Median")
-        all_resale_median = df_all_12m.groupby("Town")[column_name].median().rename("All Resale")
+        all_resale_median = df_all_12m.groupby("Town")[column_name].median().rename("L12M Resale All")
 
         # 4. Join and Sort
         # The order will be: Town, [Months...], L12M MD Median, All Resale
@@ -1184,7 +1418,12 @@ def server(input, output, session):
         result.insert(1, "Flat Type", ft_choice)
         result = result.sort_values(by="L12M MD Median", ascending=False)
 
-        # 5. Formatting Logic
+        # 5. Generate styles using the updated helper
+        n_cols = len(result.columns)
+        period_indices = list(range(2, n_cols - 2)) 
+        heatmap_styles = apply_heatmap_style(result, period_indices)
+
+        # 6. Formatting Logic
         cols_to_format = [c for c in result.columns if c not in ["Town", "Flat Type"]]
         for col in cols_to_format:
             if is_price:
@@ -1196,10 +1435,9 @@ def server(input, output, session):
             result,
             styles=[
                 {"style": {"padding": "4px 8px", "font-size": "13px", "line-height": "1.1", "white-space": "nowrap"}},
-                {"cols": [0], "style": {"font-weight": "bold",
-                "min-width": "220px"}},
-                # Highlight the "All Resale" column in a light grey to distinguish it
-                {"cols": [len(result.columns)-1], "style": {"background-color": "#f8f9fa", "font-style": "italic"}}
+                {"cols": [0], "style": {"font-weight": "bold", "min-width": "220px"}},
+                {"cols": [len(result.columns)-1, len(result.columns)-2], "style": {"background-color": "#f8fafc", "font-weight": "600"}},
+                *heatmap_styles
             ],
             height="auto",
             width="100%"
@@ -1250,14 +1488,22 @@ def server(input, output, session):
         
         # Sort and Format
         result = result.sort_values(by="Last 12 Months", ascending=False)
+
+        # Generate styles using the updated helper
+        n_cols = len(result.columns)
+        period_indices = list(range(2, n_cols - 2)) 
+        heatmap_styles = apply_heatmap_style(result, period_indices)
         
         # Ensure counts are integers
         count_cols = [c for c in result.columns if c not in ["Project Name", "Town"]]
         result[count_cols] = result[count_cols].astype(int)
 
-        return render.DataTable(result, styles=[{"style": {"padding": "4px 8px", "font-size": "13px"}}, 
-            {"cols": [0], "style": {"font-weight": "bold",
-                "min-width": "220px"}}])
+        return render.DataTable(result, styles=[
+            {"style": {"padding": "4px 8px", "line-height": "1.1", "font-size": "13px"}}, 
+            {"cols": [0], "style": {"font-weight": "bold", "min-width": "220px"}},
+            {"cols": [len(result.columns)-1, len(result.columns)-2], "style": {"background-color": "#f8fafc", "font-weight": "600"}},
+            *heatmap_styles 
+            ])
 
     # ---- Table 8B: Project Share ----
     @render.data_frame
@@ -1295,8 +1541,11 @@ def server(input, output, session):
         for col in cols_to_format:
             result[col] = result[col].map("{:.1f}%".format)
 
-        return render.DataTable(result, styles=[{"style": {"padding": "4px 8px", "font-size": "13px"}}, {"cols": [0], "style": {"font-weight": "bold",
-                "min-width": "220px"}}])
+        return render.DataTable(result, styles=[
+            {"style": {"padding": "4px 8px", "line-height": "1.1", "font-size": "13px"}}, 
+            {"cols": [0], "style": {"font-weight": "bold", "min-width": "220px"}}, 
+            {"cols": [len(result.columns)-1], "style": {"background-color": "#f8fafc", "font-weight": "600"}}
+        ])
 
     # ---- Table 8C: Project Max Price ----
     @render.data_frame
@@ -1316,12 +1565,20 @@ def server(input, output, session):
         result.insert(1, "Town", result.pop("Town"))
         result = result.sort_values(by="L12M Max", ascending=False)
 
+        n_cols = len(result.columns)
+        period_indices = list(range(2, n_cols - 1)) 
+        heatmap_styles = apply_heatmap_style(result, period_indices)
+
         cols_to_format = [c for c in result.columns if c not in ["Project Name", "Town"]]
         for col in cols_to_format:
             result[col] = result[col].map(lambda x: f"${x/1e6:.2f}M" if x > 0 else "-")
 
-        return render.DataTable(result, styles=[{"style": {"padding": "4px 8px", "font-size": "13px"}}, {"cols": [0], "style": {"font-weight": "bold",
-                "min-width": "220px"}}])
+        return render.DataTable(result, styles=[
+            {"style": {"padding": "4px 8px", "line-height": "1.1", "font-size": "13px"}}, 
+            {"cols": [0], "style": {"font-weight": "bold", "min-width": "220px"}}, 
+            {"cols": [len(result.columns)-1], "style": {"background-color": "#f8fafc", "font-weight": "600"}},
+            *heatmap_styles
+        ])
 
     # ---- Table 8D: Project Max PSF ----
     @render.data_frame
@@ -1341,12 +1598,20 @@ def server(input, output, session):
         result.insert(1, "Town", result.pop("Town"))
         result = result.sort_values(by="L12M Max PSF", ascending=False)
 
+        n_cols = len(result.columns)
+        period_indices = list(range(2, n_cols - 1)) 
+        heatmap_styles = apply_heatmap_style(result, period_indices)
+
         cols_to_format = [c for c in result.columns if c not in ["Project Name", "Town"]]
         for col in cols_to_format:
             result[col] = result[col].map(lambda x: f"${x:,.0f}" if x > 0 else "-")
 
-        return render.DataTable(result, styles=[{"style": {"padding": "4px 8px", "font-size": "13px"}}, {"cols": [0], "style": {"font-weight": "bold",
-                "min-width": "220px"}}])
+        return render.DataTable(result, styles=[
+            {"style": {"padding": "4px 8px", "line-height": "1.1", "font-size": "13px"}}, 
+            {"cols": [0], "style": {"font-weight": "bold", "min-width": "220px"}}, 
+            {"cols": [len(result.columns)-1], "style": {"background-color": "#f8fafc", "font-weight": "600"}},
+            *heatmap_styles
+        ])
 
     # ---- Table 8E/F: Project Median Helper ----
     def render_project_median(column_name, is_price=True):
@@ -1365,6 +1630,10 @@ def server(input, output, session):
         result.insert(1, "Town", result.pop("Town"))
         result = result.sort_values(by="L12M Median", ascending=False)
 
+        n_cols = len(result.columns)
+        period_indices = list(range(2, n_cols - 1)) 
+        heatmap_styles = apply_heatmap_style(result, period_indices)
+
         cols_to_format = [c for c in result.columns if c not in ["Project Name", "Town"]]
         for col in cols_to_format:
             if is_price:
@@ -1372,8 +1641,12 @@ def server(input, output, session):
             else:
                 result[col] = result[col].map(lambda x: f"${x:,.0f}" if x > 0 else "-")
 
-        return render.DataTable(result, styles=[{"style": {"padding": "4px 8px", "font-size": "13px"}}, {"cols": [0], "style": {"font-weight": "bold",
-                "min-width": "220px"}}])
+        return render.DataTable(result, styles=[
+            {"style": {"padding": "4px 8px", "line-height": "1.1", "font-size": "13px"}}, 
+            {"cols": [0], "style": {"font-weight": "bold", "min-width": "220px"}}, 
+            {"cols": [len(result.columns)-1], "style": {"background-color": "#f8fafc", "font-weight": "600"}},
+            *heatmap_styles
+        ])
 
     @render.data_frame
     def project_median_price():
@@ -1424,6 +1697,10 @@ def server(input, output, session):
         # Sort by L12M Median (Newest buildings at the top)
         result = result.sort_values(by="L12M Median Lease", ascending=False)
 
+        n_cols = len(result.columns)
+        period_indices = list(range(2, n_cols - 2)) 
+        heatmap_styles = apply_heatmap_style(result, period_indices)
+
         # 7. Formatting: Apply " Yrs" suffix to all numeric columns
         cols_to_format = [c for c in result.columns if c not in ["Project Name", "Town"]]
         for col in cols_to_format:
@@ -1431,13 +1708,12 @@ def server(input, output, session):
             result[col] = result[col].map(lambda x: f"{x:.0f} Yrs" if x > 0 else "-")
 
         # 8. Render with standard Table 8 styling
-        return render.DataTable(
-            result,
-            styles=[
-                {"style": {"padding": "4px 8px", "font-size": "13px", "white-space": "nowrap"}}, 
-                {"cols": [0], "style": {"font-weight": "bold", "min-width": "220px"}}
-            ]
-        )
+        return render.DataTable(result, styles=[
+            {"style": {"padding": "4px 8px", "line-height": "1.1", "font-size": "13px", "white-space": "nowrap"}}, 
+            {"cols": [0], "style": {"font-weight": "bold", "min-width": "220px"}}, 
+            {"cols": [len(result.columns)-1], "style": {"background-color": "#f8fafc", "font-weight": "600"}},
+            *heatmap_styles
+        ])
 
     # ---- Table 9 Helper: Ranking Transactions with Highlighting ----
     def get_top_transactions(group_cols, sort_col):
@@ -1502,8 +1778,16 @@ def server(input, output, session):
                 {"cols": [4], "style": {"min-width": "120px"}},
                 {"cols": [5], "style": {"min-width": "180px"}},
                 {"cols": [6, 7], "style": {"min-width": "60px"}},
-                {"cols": [10, 11], "style": {"min-width": "60px", "font-weight": "bold"}},
+                {"cols": [10, 11], "style": {"min-width": "60px"}},
                 
+                # Conditional seperator after the third ranked entry for each flat type
+                {
+                    "rows": [i for i, r in enumerate(result["Rank"]) if r == 3],
+                    "style": {
+                        "border-bottom": "1.5px dotted #cbd5e1"  # Soft slate color
+                    }
+                },
+
                 # Conditional Highlight: If Rank (Col 0) is 1, highlight the row
                 {
                     "rows": [i for i, r in enumerate(result["Rank"]) if r == 1],
