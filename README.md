@@ -1,7 +1,7 @@
-# Million Dollar HDB Dashboard
+# HDB Million Dollar Flat Dashboard
 
 ## Overview
-This interactive dashboard provides a comprehensive overview of trends and insights relating to **Million Dollar HDB resale flat transactions** in Singapore. As these transactions tend to form and shape market expectations about th public housing market, this tool allows users to analyze the specific market dynamics, geographical distributions, and price movements to analyse emerging trends. 
+This interactive dashboard provides a comprehensive overview of trends and insights relating to **Million Dollar HDB resale flat transactions** in Singapore. As these transactions tend to form and shape market expectations about the public housing market, this tool allows users to analyze the specific market dynamics, geographical distributions, and price movements to bring out emerging trends. 
 
 ## Data Sources & Methodology
 The application utilizes the following resources:
